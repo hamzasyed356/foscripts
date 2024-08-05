@@ -5,7 +5,7 @@ import threading
 from datetime import datetime, timedelta
 
 # MQTT settings
-broker = "192.168.18.19"
+broker = "192.168.18.28"
 port = 1883
 topics = ['cstr-temp', 'cstr-level', 'mtank-temp', 'mtank-level']
 
@@ -14,7 +14,7 @@ dbname = "sensordata"
 user = "postgres"
 password = "399584"
 host = "localhost"
-table = "temp_setting"
+table = "fo_temp_setting"
 
 # Connect to PostgreSQL database
 conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host)
@@ -60,7 +60,7 @@ def on_message(client, userdata, message):
 
 # Function to get temp settings from database
 def get_temp_settings():
-    cursor.execute(f"SELECT set_temp, over_duration, temp_change FROM {table} ORDER BY id DESC LIMIT 1")
+    cursor.execute(f"SELECT set_temp, FROM {table} ORDER BY id DESC LIMIT 1")
     return cursor.fetchone()
 
 # Function to update temp settings
@@ -69,9 +69,7 @@ def update_temp_settings():
     new_settings = get_temp_settings()
     if new_settings:
         current_temp_settings = {
-            "set_temp": new_settings[0],
-            "over_duration": new_settings[1],
-            "temp_change": new_settings[2]
+            "set_temp": new_settings[0]
         }
         # Recalculate target_temp with new settings and reset last_temp_change_time
         if sensor_values["cstr-temp"] is not None:

@@ -13,7 +13,7 @@ import os
 
 
 # MQTT Configuration
-MQTT_BROKER = "192.168.18.19"
+MQTT_BROKER = "192.168.18.28"
 MQTT_PORT = 1883
 MQTT_TOPICS = {
     "cstr-ph": "cstr_ph",
@@ -22,11 +22,11 @@ MQTT_TOPICS = {
     "cstr-orp": "cstr_orp",
     "cstr-temp": "cstr_temp",
     "cstr-level": "cstr_level",
-    "mtank-temp": "mtank_temp",
-    "mtank-level": "mtank_level",
-    "mtank-recycle": "mtank_recycle",
-    "effluent-temp": "effluent_temp",
-    "effluent-level": "effluent_level",
+    "feed-temp": "feed_temp",
+    "feed-level": "feed_level",
+    "feed-tds": "feed_tds",
+    "ds-tds": "ds_tds",
+    "ds-level": "ds_level",
     "flux": "flux"
 }
 
@@ -55,7 +55,7 @@ mqtt_client.loop_start()
 # Database configuration
 DB_NAME = "sensordata"
 DB_USER = "postgres"
-DB_PASSWORD = "399584"
+DB_PASSWORD = "400220"
 DB_HOST = "localhost"
 DB_PORT = "5432"
 
@@ -89,7 +89,7 @@ def fetch_and_display_timeseries(param, from_date, to_date, canvas, figure, pare
 
 # Function to save the graph as an image
 def save_graph_as_image(figure, parent_window):
-    file_path = filedialog.asksaveasfilename(initialdir="/home/resurgencemd/pictures", defaultextension=".png", filetypes=[("PNG files", "*.png"), ("JPEG files", "*.jpg")])
+    file_path = filedialog.asksaveasfilename(initialdir="/home/resurgencefo/pictures", defaultextension=".png", filetypes=[("PNG files", "*.png"), ("JPEG files", "*.jpg")])
     if file_path:
         figure.savefig(file_path)
         messagebox.showinfo("Success", "Image has been saved successfully.")
@@ -164,10 +164,8 @@ def on_param_frame_click(param):
     open_timeseries_window(param)
 
 # Function to save settings to the database
-def save_settings(set_temp_input, over_duration_input, temp_change_input, settings_window):
+def save_settings(set_temp_input, settings_window):
     set_temp = set_temp_input.get()
-    over_duration = over_duration_input.get()
-    temp_change = temp_change_input.get()
 
     try:
         conn = psycopg2.connect(
@@ -176,8 +174,8 @@ def save_settings(set_temp_input, over_duration_input, temp_change_input, settin
         now = datetime.now()
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO temp_setting (timestamp, set_temp, over_duration, temp_change, published) VALUES (%s, %s, %s, %s, %s)",
-            (now, set_temp, over_duration, temp_change, False)
+            "INSERT INTO fo_temp_setting (timestamp, set_temp, published) VALUES (%s, %s, %s, %s, %s)",
+            (now, set_temp, False)
         )
         conn.commit()
         cursor.close()
@@ -199,14 +197,10 @@ def open_settings():
     settings_window.after(100, lambda: settings_window.grab_set())
 
     set_temp_input = CTkEntry(settings_window, placeholder_text='Set Temp', font=("Helvetica", 18))
-    over_duration_input = CTkEntry(settings_window, placeholder_text='Over Duration', font=("Helvetica", 18))
-    temp_change_input = CTkEntry(settings_window, placeholder_text='Temp Change', font=("Helvetica", 18))
 
     set_temp_input.pack(pady=10)
-    over_duration_input.pack(pady=10)
-    temp_change_input.pack(pady=10)
 
-    save_button = CTkButton(settings_window, text="Save Settings", command=lambda: save_settings(set_temp_input, over_duration_input, temp_change_input, settings_window), font=("Helvetica", 18))
+    save_button = CTkButton(settings_window, text="Save Settings", command=lambda: save_settings(set_temp_input, settings_window), font=("Helvetica", 18))
     save_button.pack(pady=20)
 
     # Fetch the latest settings from the database
@@ -215,14 +209,12 @@ def open_settings():
             dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT
         )
         cursor = conn.cursor()
-        cursor.execute("SELECT set_temp, over_duration, temp_change FROM temp_setting ORDER BY timestamp DESC LIMIT 1")
+        cursor.execute("SELECT set_temp FROM fo_temp_setting ORDER BY timestamp DESC LIMIT 1")
         latest_settings = cursor.fetchone()
         conn.close()
 
         if latest_settings:
             set_temp_input.insert(0, latest_settings[0])
-            over_duration_input.insert(0, latest_settings[1])
-            temp_change_input.insert(0, latest_settings[2])
 
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred while fetching settings: {e}")
@@ -239,7 +231,7 @@ def download_data(from_date_input, to_date_input, download_window):
         )
         query = f"SELECT * FROM sensor_data WHERE timestamp BETWEEN '{from_date}' AND '{to_date}'"
         df = pd.read_sql_query(query, conn)
-        file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")], initialdir="/home/resurgencemd/pictures")
+        file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")], initialdir="/home/resurgencefo/pictures")
         if file_path:
             df.to_csv(file_path, index=False)
             conn.close()
@@ -273,7 +265,7 @@ def open_download():
     download_button.pack(pady=20)
 
 app = CTk()
-app.title("Aquameter Membrane Distillation")
+app.title("Aquameter Foward Osmosis")
 app.geometry('1024x600')
 
 # Create a menu
@@ -283,8 +275,8 @@ menu_bar.add_command(label="Settings", command=open_settings)
 menu_bar.add_command(label="Download", command=open_download)
 
 # Load logos
-left_logo_image = Image.open("/home/resurgencemd/pythonscripts/nust-logo.png")
-right_logo_image = Image.open("/home/resurgencemd/pythonscripts/resurgence_logo.png")
+left_logo_image = Image.open("/home/resurgencefo/foscripts/nust-logo.png")
+right_logo_image = Image.open("/home/resurgencefo/foscripts/resurgence_logo.png")
 
 left_logo_image = left_logo_image.resize((100, 100), Image.LANCZOS)
 right_logo_image = right_logo_image.resize((480, 75), Image.LANCZOS)
@@ -301,10 +293,10 @@ left_logo_label.grid(row=0, column=0, padx=20, sticky="w")
 right_logo_label = CTkLabel(master=title_frame, image=right_logo_ctk_image, text="")
 right_logo_label.grid(row=0, column=2, padx=20, sticky="e")
 
-title_label = CTkLabel(master=title_frame, text="Membrane Distillation", font=("Times New Roman", 44, 'bold'))
+title_label = CTkLabel(master=title_frame, text="Foward Osmosis", font=("Times New Roman", 44, 'bold'))
 title_label.grid(row=0, column=1, pady=10)
 
-sections = ["Anaerobic CSTR", "Membrane Tank", "Effluent"]
+sections = ["Anaerobic CSTR", "Feed Tank", "DS Tank"]
 
 anaerobic_cstr_params = [
     ("PH", "cstr-ph", "cstr_ph", " /14"),
@@ -315,19 +307,19 @@ anaerobic_cstr_params = [
     ("Level", "cstr-level", "cstr_level", " Liters"),
 ]
 
-membrane_tank_params = [
-    ("Temp", "mtank-temp", "mtank_temp", " °C"),
-    ("Level", "mtank-level", "mtank_level", " mL"),
-    ("Recycle", "mtank-recycle", "mtank_recycle", " ")
+feed_tank_params = [
+    ("Temp", "feed-temp", "feed_temp", " °C"),
+    ("Level", "feed-level", "feed_level", " mL"),
+    ("TDS", "feed-tds", "feed_tds", " PPM")
 ]
 
-effluent_params = [
-    ("Level", "effluent-level", "effluent_level", " mL"),
-    ("Temp", "effluent-temp", "effluent_temp", " °C"),
-    ("Flux", "flux", "flux", " mL/min")
+ds_params = [
+    ("Level", "ds-level", "ds_level", " mL"),
+    ("TDS", "ds-tds", "ds_tds", " PPM"),
+    ("Flux", "flux", "flux", " LMH")
 ]
 
-parameters = [anaerobic_cstr_params, membrane_tank_params, effluent_params]
+parameters = [anaerobic_cstr_params, feed_tank_params, ds_params]
 
 value_labels = {}
 
@@ -372,7 +364,7 @@ for i, section in enumerate(sections):
 
 footer_frame = CTkFrame(master=app, fg_color="transparent")
 footer_frame.grid(row=2, column=0, columnspan=3, pady=5)
-company_logo_image = Image.open("/home/resurgencemd/pythonscripts/company-logo.png")
+company_logo_image = Image.open("/home/resurgencefo/foscripts/company-logo.png")
 company_logo_image = company_logo_image.resize((100, 50), Image.LANCZOS)
 company_logo_ctk_image = CTkImage(light_image=company_logo_image, dark_image=company_logo_image, size=(100, 20))
 company_logo_label = CTkLabel(master=footer_frame, image=company_logo_ctk_image, text="")

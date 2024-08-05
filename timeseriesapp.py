@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 
 # Initialize the main application
 app = ctk.CTk()
-app.title("Aquameter Membrane Distillation")
+app.title("Aquameter Forward Osmosis")
 app.geometry('1920x1080')
 
 # Database connection
@@ -23,12 +23,12 @@ title_frame = ctk.CTkFrame(master=app, fg_color="transparent")
 title_frame.grid(row=0, column=0, columnspan=4, sticky="n")
 
 # Title within the transparent frame
-title_label = ctk.CTkLabel(master=title_frame, text="Membrane Distillation", font=("Helvetica", 44, 'bold'))
+title_label = ctk.CTkLabel(master=title_frame, text="Forward Osmosis", font=("Times New Roman", 44, 'bold'))
 title_label.grid(row=0, column=1, pady=5)
 
 # Load logos for the title bar
-left_logo_image = Image.open("/home/resurgencemd/pythonscripts/nust-logo.png")
-right_logo_image = Image.open("/home/resurgencemd/pythonscripts/resurgence_logo.png")
+left_logo_image = Image.open("/home/resurgencefo/foscripts/nust-logo.png")
+right_logo_image = Image.open("/home/resurgencefo/foscripts/resurgence_logo.png")
 
 left_logo_image = left_logo_image.resize((100, 100), Image.LANCZOS)
 right_logo_image = right_logo_image.resize((480, 75), Image.LANCZOS)
@@ -46,7 +46,7 @@ right_logo_label.grid(row=0, column=2, padx=20, sticky="e")
 footer_frame = ctk.CTkFrame(master=app, fg_color="transparent")
 footer_frame.grid(row=2, column=0, columnspan=4, pady=5)
 
-company_logo_image = Image.open("/home/resurgencemd/pythonscripts/company-logo.png")  # Replace with the actual path to your company logo
+company_logo_image = Image.open("/home/resurgencefo/foscripts/company-logo.png")  # Replace with the actual path to your company logo
 company_logo_image = company_logo_image.resize((100, 50), Image.LANCZOS)  # Resize image if needed
 company_logo_ctk_image = ctk.CTkImage(light_image=company_logo_image, dark_image=company_logo_image, size=(100, 20))
 
@@ -54,7 +54,7 @@ company_logo_ctk_image = ctk.CTkImage(light_image=company_logo_image, dark_image
 company_logo_label = ctk.CTkLabel(master=footer_frame, image=company_logo_ctk_image, text="")
 company_logo_label.grid(row=0, column=1, padx=20, sticky="e")
 
-copyright_label = ctk.CTkLabel(master=footer_frame, text="All rights reserved © 2024 Pentaprism Technologies.", font=("Helvetica", 12))
+copyright_label = ctk.CTkLabel(master=footer_frame, text="All rights reserved © 2024 Pentaprism Technologies.", font=("Times New Roman", 12))
 copyright_label.grid(row=0, column=0, pady=10)
 
 # Create a scrollable frame for the graphs
@@ -163,7 +163,7 @@ for param in parameters:
 
 # Function to fetch data from the database
 def fetch_data(param, from_datetime, to_datetime):
-    query = f"SELECT timestamp, {param} FROM sensor_data WHERE timestamp BETWEEN '{from_datetime}' AND '{to_datetime}' ORDER BY timestamp ASC"
+    query = f"SELECT timestamp, {param} FROM fo_sensor_data WHERE timestamp BETWEEN '{from_datetime}' AND '{to_datetime}' ORDER BY timestamp ASC"
     cur.execute(query)
     data = cur.fetchall()
     if data:
@@ -191,7 +191,7 @@ def update_graphs():
             ax = graph_widgets[param][1]
             ax.clear()
             ax.plot(data['timestamp'], data[param], marker='o', linestyle='-', label=param)
-            ax.set_title(param.replace("_", " ").title(), fontsize=16, fontname='Helvetica', fontweight='bold')
+            ax.set_title(param.replace("_", " ").title(), fontsize=16, fontname='Times New Roman', fontweight='bold')
             ax.set_xlabel('Time')
             ax.set_ylabel(param)
             ax.legend()
@@ -217,7 +217,7 @@ def update_graphs():
             ax.clear()
             ax.plot(data_col1['timestamp'], data_col1[col1], marker='o', linestyle='-', label=col1)
             ax.plot(data_col2['timestamp'], data_col2[col2], marker='o', linestyle='-', label=col2)
-            ax.set_title(title, fontsize=16, fontname='Helvetica', fontweight='bold')
+            ax.set_title(title, fontsize=16, fontname='Times New Roman', fontweight='bold')
             ax.set_xlabel('Time')
             ax.set_ylabel('Values')
             ax.legend()
@@ -244,7 +244,7 @@ def fetch_and_display_timeseries(param, from_datetime, to_datetime, canvas, figu
         ax = figure.add_subplot(111)
         ax.clear()
         ax.plot(data['timestamp'], data[param], marker='o', linestyle='-', label=param)
-        ax.set_title(param.replace("_", " ").title(), fontsize=16, fontname='Helvetica', fontweight='bold')
+        ax.set_title(param.replace("_", " ").title(), fontsize=16, fontname='Times New Roman', fontweight='bold')
         ax.set_xlabel('Time')
         ax.set_ylabel(param)
         ax.legend()

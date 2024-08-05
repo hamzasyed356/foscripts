@@ -28,22 +28,24 @@ SUPABASE_KEY = os.environ.get('SUPABASE_KEY')
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # MQTT configuration
-MQTT_BROKER = '192.168.18.19'
+MQTT_BROKER = '192.168.18.28'
 MQTT_PORT = 1883
-MQTT_TOPICS = ['cstr-level', 'cstr-temp', 'cstr-ph', 'cstr-orp', 'cstr-ec', 'cstr-tds', 'mtank-level', 'mtank-temp', 'effluent-level']
+MQTT_TOPICS = ['cstr-level', 'cstr-temp', 'cstr-ph', 'cstr-orp', 'cstr-ec', 'cstr-tds', 'feed-level', 'feed-temp', 'feed-tds', 'ds-level', 'ds-tds']
 FLUX_TOPIC = 'flux'
 
 # Global variables to store sensor data
-sensor_data = {
+fo_sensor_data = {
     'cstr_temp': None,
     'cstr_level': None,
     'cstr_ph': None,
     'cstr_orp': None,
     'cstr_ec': None,
     'cstr_tds': None,
-    'mtank_temp': None,
-    'mtank_level': None,
-    'effluent_level': None,
+    'feed_temp': None,
+    'feed_level': None,
+    'feed_tds': None,
+    'ds_level': None,
+    'ds_tds': None,
     'timestamp': None,
     'published': False
 }
@@ -59,29 +61,33 @@ def on_connect(client, userdata, flags, rc):
         client.subscribe(topic)
 
 def on_message(client, userdata, msg):
-    global sensor_data
+    global fo_sensor_data
     topic = msg.topic
     payload = json.loads(msg.payload.decode())
-    sensor_data['timestamp'] = datetime.now()
+    fo_sensor_data['timestamp'] = datetime.now()
 
     if topic == 'cstr-temp':
-        sensor_data['cstr_temp'] = float(payload)
+        fo_sensor_data['cstr_temp'] = float(payload)
     elif topic == 'cstr-level':
-        sensor_data['cstr_level'] = float(payload)
+        fo_sensor_data['cstr_level'] = float(payload)
     elif topic == 'cstr-ph':
-        sensor_data['cstr_ph'] = float(payload)
+        fo_sensor_data['cstr_ph'] = float(payload)
     elif topic == 'cstr-ec':
-        sensor_data['cstr_ec'] = float(payload)
+        fo_sensor_data['cstr_ec'] = float(payload)
     elif topic == 'cstr-orp':
-        sensor_data['cstr_orp'] = float(payload)
+        fo_sensor_data['cstr_orp'] = float(payload)
     elif topic == 'cstr-tds':
-        sensor_data['cstr_tds'] = float(payload)
-    elif topic == 'mtank-temp':
-        sensor_data['mtank_temp'] = float(payload)
-    elif topic == 'mtank-level':
-        sensor_data['mtank_level'] = float(payload)
-    elif topic == 'effluent-level':
-        sensor_data['effluent_level'] = float(payload)
+        fo_sensor_data['cstr_tds'] = float(payload)
+    elif topic == 'feed-temp':
+        fo_sensor_data['feed_temp'] = float(payload)
+    elif topic == 'feed-level':
+        fo_sensor_data['feed_level'] = float(payload)
+    elif topic == 'feed-tds':
+        fo_sensor_data['feed_tds'] = float(payload)
+    elif topic == 'ds-level':
+        fo_sensor_data['ds_level'] = float(payload)
+    elif topic == 'ds-tds':
+        fo_sensor_data['ds_tds'] = float(payload)
 
 # Function to calculate flux
 def calculate_flux(current_level, conn, mqtt_client):
@@ -89,8 +95,8 @@ def calculate_flux(current_level, conn, mqtt_client):
         cursor = conn.cursor()
         one_minute_ago = datetime.now() - timedelta(minutes=1)
         query = '''
-        SELECT effluent_level 
-        FROM sensor_data 
+        SELECT ds_level 
+        FROM fo_sensor_data 
         WHERE timestamp <= %s 
         ORDER BY timestamp DESC 
         LIMIT 1;
@@ -114,10 +120,10 @@ def calculate_flux(current_level, conn, mqtt_client):
 def save_to_database(data, mqtt_client):
     try:
         conn = psycopg2.connect(**DATABASE_CONFIG)
-        flux = calculate_flux(data['effluent_level'], conn, mqtt_client)
+        flux = calculate_flux(data['ds_level'], conn, mqtt_client)
         cursor = conn.cursor()
         insert_query = '''
-        INSERT INTO sensor_data (timestamp, cstr_temp, cstr_level, cstr_ph, cstr_orp, cstr_ec, cstr_tds, mtank_temp, mtank_level, effluent_level, flux, published)
+        INSERT INTO fo_sensor_data (timestamp, cstr_temp, cstr_level, cstr_ph, cstr_orp, cstr_ec, cstr_tds, feed_temp, feed_level, feed_tds,  ds_level, ds_tds, flux, published)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         '''
         cursor.execute(insert_query, (data['timestamp'], data['cstr_temp'], data['cstr_level'], data['cstr_ph'], data['cstr_orp'], data['cstr_ec'], data['cstr_tds'], data['mtank_temp'], data['mtank_level'], data['effluent_level'], flux, data['published']))
@@ -146,7 +152,7 @@ def upload_unpublished_data():
         cursor = conn.cursor()
         
         # Fetch and upload unpublished sensor data
-        cursor.execute("SELECT * FROM sensor_data WHERE published = FALSE")
+        cursor.execute("SELECT * FROM fo_sensor_data WHERE published = FALSE")
         data = cursor.fetchall()
         if data:
             formatted_data = []
@@ -174,7 +180,7 @@ def upload_unpublished_data():
                 print("Error uploading sensor data to Supabase")
 
         # Fetch and upload unpublished temp settings
-        cursor.execute("SELECT * FROM temp_setting WHERE published = FALSE")
+        cursor.execute("SELECT * FROM fo_temp_setting WHERE published = FALSE")
         temp_data = cursor.fetchall()
         if temp_data:
             formatted_temp_data = []
@@ -183,9 +189,7 @@ def upload_unpublished_data():
                 temp_ids.append(row[0])  # Assuming id is the first column
                 formatted_temp_data.append({
                     'timestamp': datetime_to_str(row[1]),
-                    'set_temp': row[2],
-                    'over_duration': row[3],
-                    'temp_change': row[4]
+                    'set_temp': row[2]
                 })
             response = upload_data_to_supabase_temp(formatted_temp_data)
             if response and response.data:
@@ -202,7 +206,7 @@ def upload_unpublished_data():
 # Function to upload sensor data to Supabase
 def upload_data_to_supabase(data):
     try:
-        response = supabase.table('sensor_data').insert(data).execute()
+        response = supabase.table('fo_sensor_data').insert(data).execute()
         return response
     except Exception as e:
         print(f"Error uploading data to Supabase: {e}")
@@ -211,7 +215,7 @@ def upload_data_to_supabase(data):
 # Function to upload temp setting data to Supabase
 def upload_data_to_supabase_temp(data):
     try:
-        response = supabase.table('temp_setting').insert(data).execute()
+        response = supabase.table('fo_temp_setting').insert(data).execute()
         return response
     except Exception as e:
         print(f"Error uploading temp setting data to Supabase: {e}")
@@ -223,7 +227,7 @@ def update_published_status(ids):
         conn = psycopg2.connect(**DATABASE_CONFIG)
         cursor = conn.cursor()
         ids_tuple = tuple(ids)
-        update_query = "UPDATE sensor_data SET published = TRUE WHERE id IN %s"
+        update_query = "UPDATE fo_sensor_data SET published = TRUE WHERE id IN %s"
         cursor.execute(update_query, (ids_tuple,))
         conn.commit()
         cursor.close()
@@ -237,7 +241,7 @@ def update_published_status_temp(ids):
         conn = psycopg2.connect(**DATABASE_CONFIG)
         cursor = conn.cursor()
         ids_tuple = tuple(ids)
-        update_query = "UPDATE temp_setting SET published = TRUE WHERE id IN %s"
+        update_query = "UPDATE fo_temp_setting SET published = TRUE WHERE id IN %s"
         cursor.execute(update_query, (ids_tuple,))
         conn.commit()
         cursor.close()
@@ -258,9 +262,9 @@ def main_loop():
         time.sleep(30)  # Check every minute
 
         # Save data to local database
-        success, flux = save_to_database(sensor_data, client)
+        success, flux = save_to_database(fo_sensor_data, client)
         if success:
-            sensor_data['published'] = False
+            fo_sensor_data['published'] = False
 
         # Check for internet connection and upload unpublished data
         if is_connected():

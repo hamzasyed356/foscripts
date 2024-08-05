@@ -65,7 +65,7 @@ def fetch_and_display_timeseries(param, from_date, to_date, canvas, figure, pare
         conn = psycopg2.connect(
             dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT
         )
-        query = f"SELECT timestamp, {param} FROM fo_sensor_data WHERE timestamp BETWEEN '{from_date}' AND '{to_date}'"
+        query = f"SELECT timestamp, {param} FROM sensor_data WHERE timestamp BETWEEN '{from_date}' AND '{to_date}'"
         df = pd.read_sql_query(query, conn)
         conn.close()
 
@@ -164,12 +164,8 @@ def on_param_frame_click(param):
     open_timeseries_window(param)
 
 # Function to save settings to the database
-def save_settings(set_temp_input, set_ds_init_input, set_cstr_temp_input, set_tds_input,hyst_tds_input, set_init_fs_input, settings_window):
-    set_ds_init = set_ds_init_input.get()
-    set_cstr_temp = set_cstr_temp_input.get()
-    set_tds = set_tds_input.get()
-    hyst_tds = hyst_tds_input.get()
-    set_init_fs = set_init_fs_input.get()
+def save_settings(set_temp_input, settings_window):
+    set_temp = set_temp_input.get()
 
     try:
         conn = psycopg2.connect(
@@ -178,8 +174,8 @@ def save_settings(set_temp_input, set_ds_init_input, set_cstr_temp_input, set_td
         now = datetime.now()
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO fo_setting (timestamp, set_ds_init, set_cstr_temp, set_tds, hyst_tds, set_init_fs, published) VALUES (%s, %s, %s, %s, %s)",
-            (now, set_ds_init, set_cstr_temp, set_tds, hyst_tds, set_init_fs, False)
+            "INSERT INTO fo_temp_setting (timestamp, set_temp, published) VALUES (%s, %s, %s, %s, %s)",
+            (now, set_temp, False)
         )
         conn.commit()
         cursor.close()
@@ -200,32 +196,11 @@ def open_settings():
     settings_window.update_idletasks()
     settings_window.after(100, lambda: settings_window.grab_set())
 
-    set_ds_init_label = CTkLabel(settings_window, text="Set DS Init:", font=("Helvetica", 18))
-    set_ds_init_label.pack(pady=5)
-    set_ds_init_input = CTkEntry(settings_window, font=("Helvetica", 18))
-    set_ds_init_input.pack(pady=5)
+    set_temp_input = CTkEntry(settings_window, placeholder_text='Set Temp', font=("Helvetica", 18))
 
-    set_cstr_temp_label = CTkLabel(settings_window, text="Set CSTR Temp:", font=("Helvetica", 18))
-    set_cstr_temp_label.pack(pady=5)
-    set_cstr_temp_input = CTkEntry(settings_window, font=("Helvetica", 18))
-    set_cstr_temp_input.pack(pady=5)
+    set_temp_input.pack(pady=10)
 
-    set_tds_label = CTkLabel(settings_window, text="Set TDS:", font=("Helvetica", 18))
-    set_tds_label.pack(pady=5)
-    set_tds_input = CTkEntry(settings_window, font=("Helvetica", 18))
-    set_tds_input.pack(pady=5)
-    
-    hyst_tds_label = CTkLabel(settings_window, text="Set Hyst TDS:", font=("Helvetica", 18))
-    hyst_tds_label.pack(pady=5)
-    hyst_tds_input = CTkEntry(settings_window, font=("Helvetica", 18))
-    hyst_tds_input.pack(pady=5)
-    
-    set_init_fs_label = CTkLabel(settings_window, text="Set initial fs level:", font=("Helvetica", 18))
-    set_init_fs_label.pack(pady=5)
-    set_init_fs_input = CTkEntry(settings_window, font=("Helvetica", 18))
-    set_init_fs_input.pack(pady=5)
-    
-    save_button = CTkButton(settings_window, text="Save Settings", command=lambda: save_settings(set_ds_init_input, set_cstr_temp_input, set_tds_input, hyst_tds_input, set_init_fs_input, settings_window), font=("Helvetica", 18))
+    save_button = CTkButton(settings_window, text="Save Settings", command=lambda: save_settings(set_temp_input, settings_window), font=("Helvetica", 18))
     save_button.pack(pady=20)
 
     # Fetch the latest settings from the database
@@ -234,16 +209,12 @@ def open_settings():
             dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT
         )
         cursor = conn.cursor()
-        cursor.execute("SELECT set_ds_init, set_cstr_temp, set_tds, hyst_tds, set_init_fs FROM fo_setting ORDER BY timestamp DESC LIMIT 1")
+        cursor.execute("SELECT set_temp FROM fo_temp_setting ORDER BY timestamp DESC LIMIT 1")
         latest_settings = cursor.fetchone()
         conn.close()
 
         if latest_settings:
-            set_ds_init_input.insert(0, latest_settings[0])
-            set_cstr_temp_input.insert(0, latest_settings[1])
-            set_tds_input.insert(0, latest_settings[2])
-            hyst_tds_input.insert(0, latest_settings[3])
-            set_init_fs_input.insert(0, latest_settings[4])
+            set_temp_input.insert(0, latest_settings[0])
 
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred while fetching settings: {e}")
@@ -258,7 +229,7 @@ def download_data(from_date_input, to_date_input, download_window):
         conn = psycopg2.connect(
             dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT
         )
-        query = f"SELECT * FROM fo_sensor_data WHERE timestamp BETWEEN '{from_date}' AND '{to_date}'"
+        query = f"SELECT * FROM sensor_data WHERE timestamp BETWEEN '{from_date}' AND '{to_date}'"
         df = pd.read_sql_query(query, conn)
         file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")], initialdir="/home/resurgencefo/pictures")
         if file_path:
@@ -294,7 +265,7 @@ def open_download():
     download_button.pack(pady=20)
 
 app = CTk()
-app.title("Aquameter Forward Osmosis")
+app.title("Aquameter Foward Osmosis")
 app.geometry('1024x600')
 
 # Create a menu
@@ -322,7 +293,7 @@ left_logo_label.grid(row=0, column=0, padx=20, sticky="w")
 right_logo_label = CTkLabel(master=title_frame, image=right_logo_ctk_image, text="")
 right_logo_label.grid(row=0, column=2, padx=20, sticky="e")
 
-title_label = CTkLabel(master=title_frame, text="Forward Osmosis", font=("Times New Roman", 44, 'bold'))
+title_label = CTkLabel(master=title_frame, text="Foward Osmosis", font=("Times New Roman", 44, 'bold'))
 title_label.grid(row=0, column=1, pady=10)
 
 sections = ["Anaerobic CSTR", "Feed Tank", "DS Tank"]

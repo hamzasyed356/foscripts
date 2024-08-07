@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import requests
 from dotenv import load_dotenv
 import os
+from supabase import create_client, Client
 
 # Load environment variables from .env file
 load_dotenv()
@@ -24,6 +25,11 @@ MQTT_BROKER = '192.168.18.28'
 MQTT_PORT = 1883
 MQTT_TOPICS = ['cstr-ph', 'cstr-ec', 'cstr-orp', 'cstr-tds', 'cstr-temp', 'cstr-level', 
                'feed-level', 'feed-tds', 'feed-temp', 'ds-tds', 'ds-level']
+
+# Supabase configuration
+SUPABASE_URL = os.environ.get('SUPABASE_URL')
+SUPABASE_KEY = os.environ.get('SUPABASE_KEY')
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Global variables to store sensor data
 sensor_data = {

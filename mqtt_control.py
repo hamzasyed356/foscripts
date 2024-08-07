@@ -89,11 +89,11 @@ def feed_control():
 
 # CSTR control logic
 def cstr_control():
-    if current_settings["set_temp"] is None or sensor_values["cstr-temp"] is None:
+    if current_settings["set_cstr_temp"] is None or sensor_values["cstr-temp"] is None:
         return
 
-    set_temp = current_settings["set_temp"]
-    if sensor_values["cstr-temp"] < set_temp:
+    set_cstr_temp = current_settings["set_cstr_temp"]
+    if sensor_values["cstr-temp"] < set_cstr_temp:
         publish_state("cstr/heater1", "on")
         publish_state("cstr/heater2", "on")
     else:

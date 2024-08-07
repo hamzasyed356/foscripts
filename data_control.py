@@ -147,7 +147,7 @@ def fetch_set_init_fs():
         conn = psycopg2.connect(**DATABASE_CONFIG)
         cursor = conn.cursor()
         query = '''
-        SELECT set_ds_init 
+        SELECT set_init_fs
         FROM fo_setting 
         ORDER BY timestamp DESC 
         LIMIT 1;

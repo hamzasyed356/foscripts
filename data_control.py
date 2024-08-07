@@ -36,8 +36,8 @@ sensor_data = {
     'feed_level': None,
     'feed_tds': None,
     'feed_temp': None,
-    'ds-tds': None,
-    'ds-level': None,
+    'ds_tds': None,
+    'ds_level': None,
     'vol_to_ds': None,
     'com_vol_fs': None,
     'flux': None,
@@ -82,9 +82,9 @@ def on_message(client, userdata, msg):
     elif topic == 'feed-temp':
         sensor_data['feed_temp'] = float(payload)
     elif topic == 'ds-tds':
-        sensor_data['ds-tds'] = float(payload)
+        sensor_data['ds_tds'] = float(payload)
     elif topic == 'ds-level':
-        sensor_data['ds-level'] = float(payload)
+        sensor_data['ds_level'] = float(payload)
     
     # Calculate vol_to_ds, com_vol_fs, flux, and increase_in_fs based on the formulas
     calculate_additional_params()
@@ -188,7 +188,7 @@ def save_to_database(data):
         conn = psycopg2.connect(**DATABASE_CONFIG)
         cursor = conn.cursor()
         insert_query = '''
-        INSERT INTO fo_sensor_data (timestamp, cstr_ph, cstr_ec, cstr_orp, cstr_tds, cstr_temp, cstr_level, feed_level, feed_tds, feed_temp, ds-tds, ds-level, vol_to_ds, com_vol_fs, flux, increase_in_fs, published)
+        INSERT INTO fo_sensor_data (timestamp, cstr_ph, cstr_ec, cstr_orp, cstr_tds, cstr_temp, cstr_level, feed_level, feed_tds, feed_temp, ds_tds, ds_level, vol_to_ds, com_vol_fs, flux, increase_in_fs, published)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         '''
         cursor.execute(insert_query, (data['timestamp'], data['cstr_ph'], data['cstr_ec'], data['cstr_orp'], data['cstr_tds'],
@@ -236,8 +236,8 @@ def upload_unpublished_data():
                     'feed_level': row[8],
                     'feed_tds': row[9],
                     'feed_temp': row[10],
-                    'ds-tds': row[11],
-                    'ds-level': row[12],
+                    'ds_tds': row[11],
+                    'ds_level': row[12],
                     'vol_to_ds': row[13],
                     'com_vol_fs': row[14],
                     'flux': row[15],

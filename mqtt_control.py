@@ -5,7 +5,7 @@ import threading
 from datetime import datetime, timedelta
 
 # MQTT settings
-broker = "192.168.18.19"
+broker = "192.168.18.28"
 port = 1883
 topics = ['cstr-temp', 'cstr-level', 'feed-level', 'ds-tds', 'cstr-temp']
 
@@ -19,6 +19,7 @@ table = "fo_setting"
 # Connect to PostgreSQL database
 conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host)
 cursor = conn.cursor()
+print("Connected to the PostgreSQL database")
 
 # MQTT client setup
 client = mqtt.Client()
@@ -46,6 +47,7 @@ current_settings = {
 # Callback when a message is received
 def on_message(client, userdata, message):
     global sensor_values
+    print(f"Received message: {message.topic} -> {message.payload.decode('utf-8')}")
     sensor_values[message.topic] = float(message.payload.decode("utf-8"))
 
     # Control logic
@@ -68,6 +70,7 @@ def update_settings():
             "hyst_tds": new_settings[1],
             "set_tds": new_settings[2]
         }
+    print(f"Updated settings from database: {current_settings}")
     # Ensure control logic is applied with updated settings
     cstr_control()
     feed_control()
@@ -78,6 +81,7 @@ def publish_state(topic, state):
     if previous_states[topic] != state:
         client.publish(topic, state)
         previous_states[topic] = state
+        print(f"Published state change: {topic} -> {state}")
 
 # Feed control logic
 def feed_control():
@@ -115,25 +119,31 @@ def ds_control():
 # Periodic status update
 def periodic_status_update():
     threading.Timer(120, periodic_status_update).start()  # Schedule the function to run every 2 minutes
+    print("Performing periodic status update")
     for topic in previous_states:
         if previous_states[topic] is not None:
             client.publish(topic, previous_states[topic])
+            print(f"Published periodic status: {topic} -> {previous_states[topic]}")
 
 # Periodic database check
 def periodic_db_check():
     threading.Timer(10, periodic_db_check).start()  # Check database every 10 seconds for new settings
+    print("Checking database for updated settings")
     update_settings()
 
 # MQTT connection setup
 client.on_message = on_message
 client.connect(broker, port)
+print("Connected to MQTT broker")
 
 # Subscribe to topics
 for topic in topics:
     client.subscribe(topic)
+    print(f"Subscribed to topic: {topic}")
 
 # Start MQTT loop
 client.loop_start()
+print("Started MQTT loop")
 
 # Start periodic status updates and database checks
 periodic_status_update()
@@ -148,3 +158,4 @@ finally:
     client.loop_stop()
     cursor.close()
     conn.close()
+    print("Closed MQTT loop and database connection")

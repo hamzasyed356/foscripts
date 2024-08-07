@@ -12,7 +12,7 @@ topics = ['cstr-temp', 'cstr-level', 'feed-level', 'ds-tds', 'cstr-temp']
 # Database settings
 dbname = "sensordata"
 user = "postgres"
-password = "399584"
+password = "400220"
 host = "localhost"
 table = "fo_setting"
 

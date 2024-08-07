@@ -164,8 +164,7 @@ def on_param_frame_click(param):
     open_timeseries_window(param)
 
 # Function to save settings to the database
-def save_settings(set_temp_input, set_ds_init_input, set_cstr_temp_input, set_tds_input,hyst_tds_input, set_init_fs_input, settings_window):
-    set_ds_init = set_ds_init_input.get()
+def save_settings(set_cstr_temp_input, set_tds_input, hyst_tds_input, set_init_fs_input, settings_window):
     set_cstr_temp = set_cstr_temp_input.get()
     set_tds = set_tds_input.get()
     hyst_tds = hyst_tds_input.get()
@@ -178,8 +177,8 @@ def save_settings(set_temp_input, set_ds_init_input, set_cstr_temp_input, set_td
         now = datetime.now()
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO fo_setting (timestamp, set_ds_init, set_cstr_temp, set_tds, hyst_tds, set_init_fs, published) VALUES (%s, %s, %s, %s, %s)",
-            (now, set_ds_init, set_cstr_temp, set_tds, hyst_tds, set_init_fs, False)
+            "INSERT INTO fo_setting (timestamp, set_cstr_temp, set_tds, hyst_tds, set_init_fs, published) VALUES (%s, %s, %s, %s, %s)",
+            (now, set_cstr_temp, set_tds, hyst_tds, set_init_fs, False)
         )
         conn.commit()
         cursor.close()
@@ -199,11 +198,6 @@ def open_settings():
     # Ensure the window is visible before grabbing
     settings_window.update_idletasks()
     settings_window.after(100, lambda: settings_window.grab_set())
-
-    set_ds_init_label = CTkLabel(settings_window, text="Set DS Init:", font=("Helvetica", 18))
-    set_ds_init_label.pack(pady=5)
-    set_ds_init_input = CTkEntry(settings_window, font=("Helvetica", 18))
-    set_ds_init_input.pack(pady=5)
 
     set_cstr_temp_label = CTkLabel(settings_window, text="Set CSTR Temp:", font=("Helvetica", 18))
     set_cstr_temp_label.pack(pady=5)
@@ -225,7 +219,7 @@ def open_settings():
     set_init_fs_input = CTkEntry(settings_window, font=("Helvetica", 18))
     set_init_fs_input.pack(pady=5)
     
-    save_button = CTkButton(settings_window, text="Save Settings", command=lambda: save_settings(set_ds_init_input, set_cstr_temp_input, set_tds_input, hyst_tds_input, set_init_fs_input, settings_window), font=("Helvetica", 18))
+    save_button = CTkButton(settings_window, text="Save Settings", command=lambda: save_settings(set_cstr_temp_input, set_tds_input, hyst_tds_input, set_init_fs_input, settings_window), font=("Helvetica", 18))
     save_button.pack(pady=20)
 
     # Fetch the latest settings from the database
@@ -234,16 +228,15 @@ def open_settings():
             dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT
         )
         cursor = conn.cursor()
-        cursor.execute("SELECT set_ds_init, set_cstr_temp, set_tds, hyst_tds, set_init_fs FROM fo_setting ORDER BY timestamp DESC LIMIT 1")
+        cursor.execute("SELECT set_cstr_temp, set_tds, hyst_tds, set_init_fs FROM fo_setting ORDER BY timestamp DESC LIMIT 1")
         latest_settings = cursor.fetchone()
         conn.close()
 
         if latest_settings:
-            set_ds_init_input.insert(0, latest_settings[0])
-            set_cstr_temp_input.insert(0, latest_settings[1])
-            set_tds_input.insert(0, latest_settings[2])
-            hyst_tds_input.insert(0, latest_settings[3])
-            set_init_fs_input.insert(0, latest_settings[4])
+            set_cstr_temp_input.insert(0, latest_settings[0])
+            set_tds_input.insert(0, latest_settings[1])
+            hyst_tds_input.insert(0, latest_settings[2])
+            set_init_fs_input.insert(0, latest_settings[3])
 
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred while fetching settings: {e}")

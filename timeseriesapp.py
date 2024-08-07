@@ -352,6 +352,7 @@ scrollable_frame.grid_rowconfigure(i, weight=1)
 
 # Function to create the menu bar
 def create_menu_bar():
+    global menu_bar
     menu_bar = tk.Menu(app)
     app.config(menu=menu_bar)
 

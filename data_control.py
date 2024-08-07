@@ -36,7 +36,7 @@ sensor_data = {
     'feed_level': None,
     'feed_tds': None,
     'feed_temp': None,
-    'ds-tds' : None,
+    'ds-tds': None,
     'ds-level': None,
     'vol_to_ds': None,
     'com_vol_fs': None,
@@ -92,18 +92,34 @@ def on_message(client, userdata, msg):
 def calculate_additional_params():
     global sensor_data
     
-    # vol_to_ds = feed-level(30s before) - feed-level(now)
-    if sensor_data['feed_level'] is not None:
-        sensor_data['vol_to_ds'] = fetch_previous_feed_level() - sensor_data['feed_level']
+    # Fetch previous values and ensure they are not None
+    previous_feed_level = fetch_previous_feed_level()
+    current_feed_level = sensor_data['feed_level']
+    if previous_feed_level is not None and current_feed_level is not None:
+        sensor_data['vol_to_ds'] = previous_feed_level - current_feed_level
+    else:
+        sensor_data['vol_to_ds'] = None
     
-    # com_vol_fs = set_init_fs - vol_to_ds
-    sensor_data['com_vol_fs'] = fetch_set_init_fs() - sensor_data['vol_to_ds']
+    # Fetch set init fs and ensure it's not None
+    set_init_fs = fetch_set_init_fs()
+    if set_init_fs is not None and sensor_data['vol_to_ds'] is not None:
+        sensor_data['com_vol_fs'] = set_init_fs - sensor_data['vol_to_ds']
+    else:
+        sensor_data['com_vol_fs'] = None
     
-    # flux = (vol_to_ds * 60) / 5
-    sensor_data['flux'] = (sensor_data['vol_to_ds'] * 60) / 5
+    # Ensure vol_to_ds is not None before calculating flux
+    if sensor_data['vol_to_ds'] is not None:
+        sensor_data['flux'] = (sensor_data['vol_to_ds'] * 60) / 5
+    else:
+        sensor_data['flux'] = None
     
-    # increase_in_fs = feed-tds(now) - feed-tds(30s before)
-    sensor_data['increase_in_fs'] = sensor_data['feed_tds'] - fetch_previous_feed_tds()
+    # Fetch previous feed tds and ensure it's not None
+    previous_feed_tds = fetch_previous_feed_tds()
+    current_feed_tds = sensor_data['feed_tds']
+    if previous_feed_tds is not None and current_feed_tds is not None:
+        sensor_data['increase_in_fs'] = current_feed_tds - previous_feed_tds
+    else:
+        sensor_data['increase_in_fs'] = None
 
 def fetch_previous_feed_level():
     try:
@@ -121,10 +137,10 @@ def fetch_previous_feed_level():
         result = cursor.fetchone()
         cursor.close()
         conn.close()
-        return result[0] if result else 0
+        return result[0] if result else None
     except Exception as e:
         print(f"Error fetching previous feed level: {e}")
-        return 0
+        return None
 
 def fetch_set_init_fs():
     try:
@@ -140,10 +156,10 @@ def fetch_set_init_fs():
         result = cursor.fetchone()
         cursor.close()
         conn.close()
-        return result[0] if result else 0
+        return result[0] if result else None
     except Exception as e:
         print(f"Error fetching set init fs: {e}")
-        return 0
+        return None
 
 def fetch_previous_feed_tds():
     try:
@@ -161,10 +177,10 @@ def fetch_previous_feed_tds():
         result = cursor.fetchone()
         cursor.close()
         conn.close()
-        return result[0] if result else 0
+        return result[0] if result else None
     except Exception as e:
         print(f"Error fetching previous feed tds: {e}")
-        return 0
+        return None
 
 # Function to save data to the PostgreSQL database
 def save_to_database(data):
@@ -173,10 +189,10 @@ def save_to_database(data):
         cursor = conn.cursor()
         insert_query = '''
         INSERT INTO fo_sensor_data (timestamp, cstr_ph, cstr_ec, cstr_orp, cstr_tds, cstr_temp, cstr_level, feed_level, feed_tds, feed_temp, ds-tds, ds-level, vol_to_ds, com_vol_fs, flux, increase_in_fs, published)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         '''
         cursor.execute(insert_query, (data['timestamp'], data['cstr_ph'], data['cstr_ec'], data['cstr_orp'], data['cstr_tds'],
-                                     data['cstr_temp'], data['cstr_level'], data['feed_level'], data['feed_tds'], data['feed_temp'], data['ds_tds'],  data['ds_level'], data['vol_to_ds'], data['com_vol_fs'], data['flux'], data['increase_in_fs'], data['published']))
+                                     data['cstr_temp'], data['cstr_level'], data['feed_level'], data['feed_tds'], data['feed_temp'], data['ds_tds'], data['ds_level'], data['vol_to_ds'], data['com_vol_fs'], data['flux'], data['increase_in_fs'], data['published']))
         
         conn.commit()
         cursor.close()
@@ -220,7 +236,7 @@ def upload_unpublished_data():
                     'feed_level': row[8],
                     'feed_tds': row[9],
                     'feed_temp': row[10],
-                    'ds-tds' : row[11],
+                    'ds-tds': row[11],
                     'ds-level': row[12],
                     'vol_to_ds': row[13],
                     'com_vol_fs': row[14],

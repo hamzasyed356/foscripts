@@ -71,6 +71,8 @@ def fetch_and_display_timeseries(param, from_date, to_date, canvas, figure, pare
 
         if df.empty:
             messagebox.showinfo("No Data", "No data found for the selected range.")
+            parent_window.grab_release()
+            parent_window.destroy()
             return
 
         # Plotting the data
@@ -85,6 +87,7 @@ def fetch_and_display_timeseries(param, from_date, to_date, canvas, figure, pare
 
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred: {e}")
+        parent_window.grab_release()
         parent_window.destroy()
 
 # Function to save the graph as an image
@@ -93,6 +96,7 @@ def save_graph_as_image(figure, parent_window):
     if file_path:
         figure.savefig(file_path)
         messagebox.showinfo("Success", "Image has been saved successfully.")
+        parent_window.grab_release()
         parent_window.destroy()
 
 # Function to open the time series window
@@ -184,9 +188,11 @@ def save_settings(set_cstr_temp_input, set_tds_input, hyst_tds_input, set_init_f
         cursor.close()
         conn.close()
         messagebox.showinfo("Success", "Settings have been saved successfully.")
+        settings_window.grab_release()
         settings_window.destroy()
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred: {e}")
+        settings_window.grab_release()
         settings_window.destroy()
 
 # Function to open the settings window and fetch the latest settings
@@ -240,6 +246,7 @@ def open_settings():
 
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred while fetching settings: {e}")
+        settings_window.grab_release()
         settings_window.destroy()
 
 # Function to download data as CSV
@@ -258,9 +265,11 @@ def download_data(from_date_input, to_date_input, download_window):
             df.to_csv(file_path, index=False)
             conn.close()
             messagebox.showinfo("Success", "Data has been downloaded successfully.")
+            download_window.grab_release()
             download_window.destroy()
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred: {e}")
+        download_window.grab_release()
         download_window.destroy()
 
 # Function to open the download window

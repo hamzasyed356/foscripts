@@ -27,7 +27,7 @@ MQTT_TOPICS = {
     "feed-tds": "feed_tds",
     "ds-tds": "ds_tds",
     "ds-level": "ds_level",
-    "flux": "flux"
+    # "flux": "flux"  # Flux data will be fetched from the database
 }
 
 # Initialize MQTT values storage
@@ -58,6 +58,25 @@ DB_USER = "postgres"
 DB_PASSWORD = "400220"
 DB_HOST = "localhost"
 DB_PORT = "5432"
+
+# Function to fetch flux data from the database
+def fetch_flux_data():
+    try:
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT
+        )
+        cursor = conn.cursor()
+        cursor.execute("SELECT flux FROM fo_sensor_data ORDER BY timestamp DESC LIMIT 1")
+        flux_value = cursor.fetchone()
+        conn.close()
+
+        if flux_value:
+            return flux_value[0]
+        else:
+            return None
+    except Exception as e:
+        messagebox.showerror("Error", f"An error occurred while fetching flux data: {e}")
+        return None
 
 # Function to fetch data and display time series graph
 def fetch_and_display_timeseries(param, from_date, to_date, canvas, figure, parent_window):
@@ -169,12 +188,14 @@ def on_param_frame_click(param):
 
 # Function to save settings to the database
 def save_settings(set_cstr_temp_input, set_tds_input, hyst_tds_input, set_init_fs_input, settings_window):
-    set_cstr_temp = set_cstr_temp_input.get()
-    set_tds = set_tds_input.get()
-    hyst_tds = hyst_tds_input.get()
-    set_init_fs = set_init_fs_input.get()
-
     try:
+        # Convert input values to float
+        set_cstr_temp = float(set_cstr_temp_input.get())
+        set_tds = float(set_tds_input.get())
+        hyst_tds = float(hyst_tds_input.get())
+        set_init_fs = float(set_init_fs_input.get())
+
+        # Save settings to the database
         conn = psycopg2.connect(
             dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT
         )
@@ -190,6 +211,8 @@ def save_settings(set_cstr_temp_input, set_tds_input, hyst_tds_input, set_init_f
         messagebox.showinfo("Success", "Settings have been saved successfully.")
         settings_window.grab_release()
         settings_window.destroy()
+    except ValueError:
+        messagebox.showerror("Invalid Input", "All fields must be numeric values.")
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred: {e}")
         settings_window.grab_release()
@@ -347,7 +370,7 @@ feed_tank_params = [
 ds_params = [
     ("Level", "ds-level", "ds_level", " mL"),
     ("TDS", "ds-tds", "ds_tds", " PPM"),
-    ("Flux", "flux", "flux", " LMH")
+    ("Flux", "flux", "flux", " LMH")  # Flux data fetched from database
 ]
 
 parameters = [anaerobic_cstr_params, feed_tank_params, ds_params]
@@ -379,7 +402,10 @@ for i, section in enumerate(sections):
 
     else:
         for j, (param, topic, col, unit) in enumerate(parameters[i]):
-            value = mqtt_values[topic]
+            if topic == "flux":
+                value = fetch_flux_data()  # Fetch flux data from the database
+            else:
+                value = mqtt_values[topic]
             param_frame = CTkFrame(master=section_frame, height=100, width=200, fg_color="#cfeaf7")
             param_frame.grid(row=j + 1, column=0, pady=10, padx=20, sticky="nsew")
 
@@ -417,7 +443,11 @@ def update_ui_values():
                 value_label.configure(text=f"{value}{unit}")
         else:
             for j, (param, topic, col, unit) in enumerate(parameters[i]):
-                value = mqtt_values[topic]
+                if topic == "flux":
+                    # Fetch flux data from the database
+                    value = fetch_flux_data()
+                else:
+                    value = mqtt_values[topic]
                 value_label = value_labels[topic]
                 value_label.configure(text=f"{value}{unit}")
 

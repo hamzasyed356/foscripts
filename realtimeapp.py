@@ -202,7 +202,7 @@ def save_settings(set_cstr_temp_input, set_tds_input, hyst_tds_input, set_init_f
         now = datetime.now()
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO fo_setting (timestamp, set_cstr_temp, set_tds, hyst_tds, set_init_fs, published) VALUES (%s, %s, %s, %s, %s)",
+            "INSERT INTO fo_setting (timestamp, set_cstr_temp, set_tds, hyst_tds, set_init_fs, published) VALUES (%s, %s, %s, %s, %s, %s)",
             (now, set_cstr_temp, set_tds, hyst_tds, set_init_fs, False)
         )
         conn.commit()

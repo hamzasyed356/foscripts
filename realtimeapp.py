@@ -11,13 +11,11 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import paho.mqtt.client as mqtt
 import os
 
-
 # MQTT Configuration
 MQTT_BROKER = "192.168.18.28"
 MQTT_PORT = 1883
 MQTT_TOPICS = {
     "cstr-ph": "cstr_ph",
-    "cstr-tds": "cstr_tds",
     "cstr-orp": "cstr_orp",
     "cstr-temp": "cstr_temp",
     "cstr-level": "cstr_level",
@@ -33,6 +31,11 @@ MQTT_TOPICS = {
 
 # Initialize MQTT values storage
 mqtt_values = {topic: None for topic in MQTT_TOPICS.keys()}
+
+# Add global variables for settings
+set_cstr_temp_value = None
+set_ec_value = None
+set_feed_level_value = None
 
 # MQTT callback functions
 def on_connect(client, userdata, flags, rc):
@@ -188,7 +191,8 @@ def on_param_frame_click(param):
     open_timeseries_window(param)
 
 # Function to save settings to the database
-def save_settings(set_cstr_temp_input, set_ec_input,set_feed_level_input, settings_window):
+def save_settings(set_cstr_temp_input, set_ec_input, set_feed_level_input, settings_window):
+    global set_cstr_temp_value, set_ec_value, set_feed_level_value
     try:
         # Convert input values to float
         set_cstr_temp = float(set_cstr_temp_input.get())
@@ -202,12 +206,18 @@ def save_settings(set_cstr_temp_input, set_ec_input,set_feed_level_input, settin
         now = datetime.now()
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO fo_setting (timestamp, set_cstr_temp, set_ec, set_feed_level, published) VALUES (%s, %s, %s, %s)",
+            "INSERT INTO fo_setting (timestamp, set_cstr_temp, set_ec, set_feed_level, published) VALUES (%s, %s, %s, %s, %s)",
             (now, set_cstr_temp, set_ec, set_feed_level, False)
         )
         conn.commit()
         cursor.close()
         conn.close()
+
+        # Update the global variables
+        set_cstr_temp_value = set_cstr_temp
+        set_ec_value = set_ec
+        set_feed_level_value = set_feed_level
+
         messagebox.showinfo("Success", "Settings have been saved successfully.")
         settings_window.grab_release()
         settings_window.destroy()
@@ -220,6 +230,7 @@ def save_settings(set_cstr_temp_input, set_ec_input,set_feed_level_input, settin
 
 # Function to open the settings window and fetch the latest settings
 def open_settings():
+    global set_cstr_temp_value, set_ec_value, set_feed_level_value
     settings_window = CTkToplevel()
     settings_window.title("Settings")
     settings_window.geometry("600x400")
@@ -233,18 +244,16 @@ def open_settings():
     set_cstr_temp_input = CTkEntry(settings_window, font=("Helvetica", 18))
     set_cstr_temp_input.pack(pady=5)
 
-    set_ec_label = CTkLabel(settings_window, text="Set TDS:", font=("Helvetica", 18))
+    set_ec_label = CTkLabel(settings_window, text="Set EC:", font=("Helvetica", 18))
     set_ec_label.pack(pady=5)
     set_ec_input = CTkEntry(settings_window, font=("Helvetica", 18))
     set_ec_input.pack(pady=5)
-    
-    
-    set_feed_level_label = CTkLabel(settings_window, text="Set TDS:", font=("Helvetica", 18))
+
+    set_feed_level_label = CTkLabel(settings_window, text="Set Feed Level:", font=("Helvetica", 18))
     set_feed_level_label.pack(pady=5)
     set_feed_level_input = CTkEntry(settings_window, font=("Helvetica", 18))
     set_feed_level_input.pack(pady=5)
 
-    
     save_button = CTkButton(settings_window, text="Save Settings", command=lambda: save_settings(set_cstr_temp_input, set_ec_input, set_feed_level_input, settings_window), font=("Helvetica", 18))
     save_button.pack(pady=20)
 
@@ -263,10 +272,46 @@ def open_settings():
             set_ec_input.insert(0, latest_settings[1])
             set_feed_level_input.insert(0, latest_settings[2])
 
+            # Update the global variables
+            set_cstr_temp_value = latest_settings[0]
+            set_ec_value = latest_settings[1]
+            set_feed_level_value = latest_settings[2]
+
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred while fetching settings: {e}")
         settings_window.grab_release()
         settings_window.destroy()
+
+# Function to fetch the latest settings at startup
+def fetch_latest_settings():
+    global set_cstr_temp_value, set_ec_value, set_feed_level_value
+    try:
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT
+        )
+        cursor = conn.cursor()
+        cursor.execute("SELECT set_cstr_temp, set_ec, set_feed_level FROM fo_setting ORDER BY timestamp DESC LIMIT 1")
+        latest_settings = cursor.fetchone()
+        conn.close()
+
+        if latest_settings:
+            set_cstr_temp_value = latest_settings[0]
+            set_ec_value = latest_settings[1]
+            set_feed_level_value = latest_settings[2]
+        else:
+            set_cstr_temp_value = None
+            set_ec_value = None
+            set_feed_level_value = None
+
+    except Exception as e:
+        messagebox.showerror("Error", f"An error occurred while fetching settings: {e}")
+
+# Function to publish settings to MQTT topics every 1 minute
+def publish_settings():
+    mqtt_client.publish("set-cstr-temp", str(set_cstr_temp_value))
+    mqtt_client.publish("set-ec", str(set_ec_value))
+    mqtt_client.publish("set-feed-level", str(set_feed_level_value))
+    app.after(60000, publish_settings)  # Schedule to run every 1 minute
 
 # Function to download data as CSV
 def download_data(from_date_input, to_date_input, download_window):
@@ -350,7 +395,6 @@ sections = ["Anaerobic CSTR", "Feed Tank", "DS Tank"]
 
 anaerobic_cstr_params = [
     ("PH", "cstr-ph", "cstr_ph", " /14"),
-    ("TDS", "cstr-tds", "cstr_tds", " PPM"),
     ("ORP", "cstr-orp", "cstr_orp", " mV"),
     ("Temp", "cstr-temp", "cstr_temp", " °C"),
     ("Level", "cstr-level", "cstr_level", " Liters"),
@@ -443,7 +487,6 @@ def update_ui_values():
                 value_label.configure(text=f"{value}{unit}")
         else:
             for j, (param, topic, col, unit) in enumerate(parameters[i]):
-                
                 value = mqtt_values[topic]
                 value_label = value_labels[topic]
                 value_label.configure(text=f"{value}{unit}")
@@ -452,5 +495,8 @@ def periodically_update_ui():
     update_ui_values()
     app.after(1000, periodically_update_ui)
 
+# Fetch the latest settings at startup and start publishing
+fetch_latest_settings()
+publish_settings()
 app.after(1000, periodically_update_ui)
 app.mainloop()

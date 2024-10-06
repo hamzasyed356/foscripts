@@ -17,15 +17,16 @@ MQTT_BROKER = "192.168.18.28"
 MQTT_PORT = 1883
 MQTT_TOPICS = {
     "cstr-ph": "cstr_ph",
-    "cstr-ec": "cstr_ec",
     "cstr-tds": "cstr_tds",
     "cstr-orp": "cstr_orp",
     "cstr-temp": "cstr_temp",
     "cstr-level": "cstr_level",
+    "feed-ec": "feed_ec",
     "feed-temp": "feed_temp",
     "feed-level": "feed_level",
     "feed-tds": "feed_tds",
     "ds-tds": "ds_tds",
+    "ds-ec": "ds_ec",
     "ds-level": "ds_level",
     # "flux": "flux"  # Flux data will be fetched from the database
 }
@@ -357,20 +358,20 @@ anaerobic_cstr_params = [
     ("TDS", "cstr-tds", "cstr_tds", " PPM"),
     ("ORP", "cstr-orp", "cstr_orp", " mV"),
     ("Temp", "cstr-temp", "cstr_temp", " °C"),
-    ("EC", "cstr-ec", "cstr_ec", " mS/cm"),
     ("Level", "cstr-level", "cstr_level", " Liters"),
+    ("Flux", "flux", "flux", " LMH")  # Flux data fetched from database
 ]
 
 feed_tank_params = [
-    ("Temp", "feed-temp", "feed_temp", " °C"),
+    ("EC", "feed-ec", "feed_ec", " uS/cm"),
+    ("TDS", "feed-tds", "feed_tds", " PPM"),
     ("Level", "feed-level", "feed_level", " mL"),
-    ("TDS", "feed-tds", "feed_tds", " PPM")
 ]
 
 ds_params = [
-    ("Level", "ds-level", "ds_level", " mL"),
+    ("EC", "ds-ec", "ds_ec", " uS/cm"),
     ("TDS", "ds-tds", "ds_tds", " PPM"),
-    ("Flux", "flux", "flux", " LMH")  # Flux data fetched from database
+    ("Level", "ds-level", "ds_level", " mL"),
 ]
 
 parameters = [anaerobic_cstr_params, feed_tank_params, ds_params]
@@ -386,7 +387,10 @@ for i, section in enumerate(sections):
 
     if section == "Anaerobic CSTR":
         for j, (param, topic, col, unit) in enumerate(parameters[i]):
-            value = mqtt_values[topic]
+            if topic == "flux":
+                value = fetch_flux_data()  # Fetch flux data from the database
+            else:
+                value = mqtt_values[topic]
             param_frame = CTkFrame(master=section_frame, height=100, width=200, fg_color="#cfeaf7")
             param_frame.grid(row=(j // 2) + 1, column=j % 2, pady=10, padx=20, sticky="nsew")
 
@@ -402,10 +406,7 @@ for i, section in enumerate(sections):
 
     else:
         for j, (param, topic, col, unit) in enumerate(parameters[i]):
-            if topic == "flux":
-                value = fetch_flux_data()  # Fetch flux data from the database
-            else:
-                value = mqtt_values[topic]
+            value = mqtt_values[topic]
             param_frame = CTkFrame(master=section_frame, height=100, width=200, fg_color="#cfeaf7")
             param_frame.grid(row=j + 1, column=0, pady=10, padx=20, sticky="nsew")
 
@@ -438,16 +439,17 @@ def update_ui_values():
     for i, section in enumerate(sections):
         if section == "Anaerobic CSTR":
             for j, (param, topic, col, unit) in enumerate(parameters[i]):
-                value = mqtt_values[topic]
-                value_label = value_labels[topic]
-                value_label.configure(text=f"{value}{unit}")
-        else:
-            for j, (param, topic, col, unit) in enumerate(parameters[i]):
                 if topic == "flux":
                     # Fetch flux data from the database
                     value = fetch_flux_data()
                 else:
                     value = mqtt_values[topic]
+                value_label = value_labels[topic]
+                value_label.configure(text=f"{value}{unit}")
+        else:
+            for j, (param, topic, col, unit) in enumerate(parameters[i]):
+                
+                value = mqtt_values[topic]
                 value_label = value_labels[topic]
                 value_label.configure(text=f"{value}{unit}")
 

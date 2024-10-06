@@ -34,14 +34,14 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 # Global variables to store sensor data
 sensor_data = {
     'cstr_ph': None,
-    'cstr_ec': None,
+    'feed_ec': None,
     'cstr_orp': None,
-    'cstr_tds': None,
     'cstr_temp': None,
     'cstr_level': None,
     'feed_level': None,
     'feed_tds': None,
     'feed_temp': None,
+    'ds_ec': None,
     'ds_tds': None,
     'ds_level': None,
     'vol_to_ds': None,
@@ -71,12 +71,10 @@ def on_message(client, userdata, msg):
     # Update sensor data based on MQTT topic
     if topic == 'cstr-ph':
         sensor_data['cstr_ph'] = float(payload)
-    elif topic == 'cstr-ec':
-        sensor_data['cstr_ec'] = float(payload)
+    elif topic == 'feed-ec':
+        sensor_data['feed_ec'] = float(payload)
     elif topic == 'cstr-orp':
         sensor_data['cstr_orp'] = float(payload)
-    elif topic == 'cstr-tds':
-        sensor_data['cstr_tds'] = float(payload)
     elif topic == 'cstr-temp':
         sensor_data['cstr_temp'] = float(payload)
     elif topic == 'cstr-level':
@@ -89,6 +87,8 @@ def on_message(client, userdata, msg):
         sensor_data['feed_temp'] = float(payload)
     elif topic == 'ds-tds':
         sensor_data['ds_tds'] = float(payload)
+    elif topic == 'ds-ec':
+        sensor_data['ds_ec'] = float(payload)
     elif topic == 'ds-level':
         sensor_data['ds_level'] = float(payload)
     
@@ -194,10 +194,10 @@ def save_to_database(data):
         conn = psycopg2.connect(**DATABASE_CONFIG)
         cursor = conn.cursor()
         insert_query = '''
-        INSERT INTO fo_sensor_data (timestamp, cstr_ph, cstr_ec, cstr_orp, cstr_tds, cstr_temp, cstr_level, feed_level, feed_tds, feed_temp, ds_tds, ds_level, vol_to_ds, com_vol_fs, flux, increase_in_fs, published)
+        INSERT INTO fo_sensor_data (timestamp, cstr_ph, feed_ec, cstr_orp, ds_ec, cstr_temp, cstr_level, feed_level, feed_tds, feed_temp, ds_tds, ds_level, vol_to_ds, com_vol_fs, flux, increase_in_fs, published)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         '''
-        cursor.execute(insert_query, (data['timestamp'], data['cstr_ph'], data['cstr_ec'], data['cstr_orp'], data['cstr_tds'],
+        cursor.execute(insert_query, (data['timestamp'], data['cstr_ph'], data['feed_ec'], data['cstr_orp'], data['ds_ec'],
                                      data['cstr_temp'], data['cstr_level'], data['feed_level'], data['feed_tds'], data['feed_temp'], data['ds_tds'], data['ds_level'], data['vol_to_ds'], data['com_vol_fs'], data['flux'], data['increase_in_fs'], data['published']))
         
         conn.commit()
@@ -234,20 +234,20 @@ def upload_unpublished_data():
                 formatted_data.append({
                     'timestamp': datetime_to_str(row[1]),
                     'cstr_ph': row[2],
-                    'cstr_ec': row[3],
-                    'cstr_orp': row[4],
-                    'cstr_tds': row[5],
-                    'cstr_temp': row[6],
-                    'cstr_level': row[7],
-                    'feed_level': row[8],
-                    'feed_tds': row[9],
-                    'feed_temp': row[10],
-                    'ds_tds': row[11],
-                    'ds_level': row[12],
-                    'vol_to_ds': row[13],
-                    'com_vol_fs': row[14],
-                    'flux': row[15],
-                    'increase_in_fs': row[16]
+                    'feed_ec': row[6],
+                    'cstr_orp': row[3],
+                    'ds_ec': row[14],
+                    'cstr_temp': row[4],
+                    'cstr_level': row[5],
+                    'feed_level': row[7],
+                    'feed_tds': row[8],
+                    'feed_temp': row[9],
+                    'ds_tds': row[15],
+                    'ds_level': row[16],
+                    'vol_to_ds': row[10],
+                    'com_vol_fs': row[11],
+                    'flux': row[12],
+                    'increase_in_fs': row[13]
                 })
             response = upload_data_to_external_service(formatted_data)
             if response and response.data:

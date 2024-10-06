@@ -228,7 +228,6 @@ def save_settings(set_cstr_temp_input, set_ec_input, set_feed_level_input, setti
         settings_window.grab_release()
         settings_window.destroy()
 
-# Function to open the settings window and fetch the latest settings
 def open_settings():
     global set_cstr_temp_value, set_ec_value, set_feed_level_value
     settings_window = CTkToplevel()
@@ -281,6 +280,7 @@ def open_settings():
         messagebox.showerror("Error", f"An error occurred while fetching settings: {e}")
         settings_window.grab_release()
         settings_window.destroy()
+
 
 # Function to fetch the latest settings at startup
 def fetch_latest_settings():

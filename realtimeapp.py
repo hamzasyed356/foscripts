@@ -358,13 +358,13 @@ anaerobic_cstr_params = [
 ]
 
 feed_tank_params = [
-    ("EC", "feed-ec", "feed_ec", " uS/cm"),
+    ("EC", "feed-ec", "feed_ec", " mS/cm"),
     ("TDS", "feed-tds", "feed_tds", " PPM"),
     ("Level", "feed-level", "feed_level", " mL"),
 ]
 
 ds_params = [
-    ("EC", "ds-ec", "ds_ec", " uS/cm"),
+    ("EC", "ds-ec", "ds_ec", " mS/cm"),
     ("TDS", "ds-tds", "ds_tds", " PPM"),
     ("Level", "ds-level", "ds_level", " mL"),
 ]

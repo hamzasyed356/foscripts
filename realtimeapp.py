@@ -206,8 +206,8 @@ def save_settings(set_cstr_temp_input, set_ec_input, set_feed_level_input, setti
         now = datetime.now()
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO fo_setting (timestamp, set_cstr_temp, set_ec, set_feed_level, published) VALUES (%s, %s, %s, %s, %s)",
-            (now, set_cstr_temp, set_ec, set_feed_level, False)
+            "INSERT INTO fo_setting (timestamp, set_cstr_temp, set_ec, published, set_feed_level) VALUES (%s, %s, %s, %s, %s)",
+            (now, set_cstr_temp, set_ec, False, set_feed_level)
         )
         conn.commit()
         cursor.close()

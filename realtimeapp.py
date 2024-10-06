@@ -188,13 +188,12 @@ def on_param_frame_click(param):
     open_timeseries_window(param)
 
 # Function to save settings to the database
-def save_settings(set_cstr_temp_input, set_tds_input, hyst_tds_input, set_init_fs_input, settings_window):
+def save_settings(set_cstr_temp_input, set_ec_input,set_feed_level_input, settings_window):
     try:
         # Convert input values to float
         set_cstr_temp = float(set_cstr_temp_input.get())
-        set_tds = float(set_tds_input.get())
-        hyst_tds = float(hyst_tds_input.get())
-        set_init_fs = float(set_init_fs_input.get())
+        set_ec = float(set_ec_input.get())
+        set_feed_level = float(set_feed_level_input.get())
 
         # Save settings to the database
         conn = psycopg2.connect(
@@ -203,8 +202,8 @@ def save_settings(set_cstr_temp_input, set_tds_input, hyst_tds_input, set_init_f
         now = datetime.now()
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO fo_setting (timestamp, set_cstr_temp, set_tds, hyst_tds, set_init_fs, published) VALUES (%s, %s, %s, %s, %s, %s)",
-            (now, set_cstr_temp, set_tds, hyst_tds, set_init_fs, False)
+            "INSERT INTO fo_setting (timestamp, set_cstr_temp, set_ec, set_feed_level, published) VALUES (%s, %s, %s, %s)",
+            (now, set_cstr_temp, set_ec, set_feed_level, False)
         )
         conn.commit()
         cursor.close()
@@ -234,22 +233,19 @@ def open_settings():
     set_cstr_temp_input = CTkEntry(settings_window, font=("Helvetica", 18))
     set_cstr_temp_input.pack(pady=5)
 
-    set_tds_label = CTkLabel(settings_window, text="Set TDS:", font=("Helvetica", 18))
-    set_tds_label.pack(pady=5)
-    set_tds_input = CTkEntry(settings_window, font=("Helvetica", 18))
-    set_tds_input.pack(pady=5)
+    set_ec_label = CTkLabel(settings_window, text="Set TDS:", font=("Helvetica", 18))
+    set_ec_label.pack(pady=5)
+    set_ec_input = CTkEntry(settings_window, font=("Helvetica", 18))
+    set_ec_input.pack(pady=5)
     
-    hyst_tds_label = CTkLabel(settings_window, text="Set Hyst TDS:", font=("Helvetica", 18))
-    hyst_tds_label.pack(pady=5)
-    hyst_tds_input = CTkEntry(settings_window, font=("Helvetica", 18))
-    hyst_tds_input.pack(pady=5)
     
-    set_init_fs_label = CTkLabel(settings_window, text="Set initial fs level:", font=("Helvetica", 18))
-    set_init_fs_label.pack(pady=5)
-    set_init_fs_input = CTkEntry(settings_window, font=("Helvetica", 18))
-    set_init_fs_input.pack(pady=5)
+    set_feed_level_label = CTkLabel(settings_window, text="Set TDS:", font=("Helvetica", 18))
+    set_feed_level_label.pack(pady=5)
+    set_feed_level_input = CTkEntry(settings_window, font=("Helvetica", 18))
+    set_feed_level_input.pack(pady=5)
+
     
-    save_button = CTkButton(settings_window, text="Save Settings", command=lambda: save_settings(set_cstr_temp_input, set_tds_input, hyst_tds_input, set_init_fs_input, settings_window), font=("Helvetica", 18))
+    save_button = CTkButton(settings_window, text="Save Settings", command=lambda: save_settings(set_cstr_temp_input, set_ec_input, set_feed_level_input, settings_window), font=("Helvetica", 18))
     save_button.pack(pady=20)
 
     # Fetch the latest settings from the database
@@ -258,15 +254,14 @@ def open_settings():
             dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT
         )
         cursor = conn.cursor()
-        cursor.execute("SELECT set_cstr_temp, set_tds, hyst_tds, set_init_fs FROM fo_setting ORDER BY timestamp DESC LIMIT 1")
+        cursor.execute("SELECT set_cstr_temp, set_ec, set_feed_level FROM fo_setting ORDER BY timestamp DESC LIMIT 1")
         latest_settings = cursor.fetchone()
         conn.close()
 
         if latest_settings:
             set_cstr_temp_input.insert(0, latest_settings[0])
-            set_tds_input.insert(0, latest_settings[1])
-            hyst_tds_input.insert(0, latest_settings[2])
-            set_init_fs_input.insert(0, latest_settings[3])
+            set_ec_input.insert(0, latest_settings[1])
+            set_feed_level_input.insert(0, latest_settings[2])
 
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred while fetching settings: {e}")

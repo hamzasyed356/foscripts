@@ -23,8 +23,8 @@ DATABASE_CONFIG = {
 # MQTT configuration
 MQTT_BROKER = '192.168.18.28'
 MQTT_PORT = 1883
-MQTT_TOPICS = ['cstr-ph', 'cstr-ec', 'cstr-orp', 'cstr-tds', 'cstr-temp', 'cstr-level', 
-               'feed-level', 'feed-tds', 'feed-temp', 'ds-tds', 'ds-level']
+MQTT_TOPICS = ['cstr-ph', 'feed-ec', 'cstr-orp', 'cstr-temp', 'cstr-level', 
+               'feed-level', 'feed-tds', 'feed-temp', 'ds-tds', 'ds-level', 'ds-ec']
 
 # Supabase configuration
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
@@ -107,7 +107,7 @@ def calculate_additional_params():
         sensor_data['vol_to_ds'] = None
     
     # Fetch set init fs and ensure it's not None
-    set_init_fs = fetch_set_init_fs()
+    set_init_fs = 20
     if set_init_fs is not None and sensor_data['vol_to_ds'] is not None:
         sensor_data['com_vol_fs'] = set_init_fs - sensor_data['vol_to_ds']
     else:
@@ -148,24 +148,24 @@ def fetch_previous_feed_level():
         print(f"Error fetching previous feed level: {e}")
         return None
 
-def fetch_set_init_fs():
-    try:
-        conn = psycopg2.connect(**DATABASE_CONFIG)
-        cursor = conn.cursor()
-        query = '''
-        SELECT set_init_fs
-        FROM fo_setting 
-        ORDER BY timestamp DESC 
-        LIMIT 1;
-        '''
-        cursor.execute(query)
-        result = cursor.fetchone()
-        cursor.close()
-        conn.close()
-        return result[0] if result else None
-    except Exception as e:
-        print(f"Error fetching set init fs: {e}")
-        return None
+# def fetch_set_init_fs():
+#     try:
+#         conn = psycopg2.connect(**DATABASE_CONFIG)
+#         cursor = conn.cursor()
+#         query = '''
+#         SELECT set_init_fs
+#         FROM fo_setting 
+#         ORDER BY timestamp DESC 
+#         LIMIT 1;
+#         '''
+#         cursor.execute(query)
+#         result = cursor.fetchone()
+#         cursor.close()
+#         conn.close()
+#         return result[0] if result else None
+#     except Exception as e:
+#         print(f"Error fetching set init fs: {e}")
+#         return None
 
 def fetch_previous_feed_tds():
     try:

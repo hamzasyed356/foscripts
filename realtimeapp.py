@@ -267,9 +267,9 @@ def open_settings():
         conn.close()
 
         if latest_settings:
-            set_cstr_temp_input.insert(0, latest_settings[0])
-            set_ec_input.insert(0, latest_settings[1])
-            set_feed_level_input.insert(0, latest_settings[2])
+            set_cstr_temp_input.insert(0, str(latest_settings[0]))
+            set_ec_input.insert(0, str(latest_settings[1]))
+            set_feed_level_input.insert(0, str(latest_settings[2]))
 
 
             # Update the global variables

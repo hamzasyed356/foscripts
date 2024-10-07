@@ -271,6 +271,7 @@ def open_settings():
             set_ec_input.insert(0, latest_settings[1])
             set_feed_level_input.insert(0, latest_settings[2])
 
+
             # Update the global variables
             set_cstr_temp_value = latest_settings[0]
             set_ec_value = latest_settings[1]
@@ -282,29 +283,29 @@ def open_settings():
         settings_window.destroy()
 
 
-# Function to fetch the latest settings at startup
-def fetch_latest_settings():
-    global set_cstr_temp_value, set_ec_value, set_feed_level_value
-    try:
-        conn = psycopg2.connect(
-            dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT
-        )
-        cursor = conn.cursor()
-        cursor.execute("SELECT set_cstr_temp, set_ec, set_feed_level FROM fo_setting ORDER BY timestamp DESC LIMIT 1")
-        latest_settings = cursor.fetchone()
-        conn.close()
+# # Function to fetch the latest settings at startup
+# def fetch_latest_settings():
+#     global set_cstr_temp_value, set_ec_value, set_feed_level_value
+#     try:
+#         conn = psycopg2.connect(
+#             dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT
+#         )
+#         cursor = conn.cursor()
+#         cursor.execute("SELECT set_cstr_temp, set_ec, set_feed_level FROM fo_setting ORDER BY timestamp DESC LIMIT 1")
+#         latest_settings = cursor.fetchone()
+#         conn.close()
 
-        if latest_settings:
-            set_cstr_temp_value = latest_settings[0]
-            set_ec_value = latest_settings[1]
-            set_feed_level_value = latest_settings[2]
-        else:
-            set_cstr_temp_value = None
-            set_ec_value = None
-            set_feed_level_value = None
+#         if latest_settings:
+#             set_cstr_temp_value = latest_settings[0]
+#             set_ec_value = latest_settings[1]
+#             set_feed_level_value = latest_settings[2]
+#         else:
+#             set_cstr_temp_value = None
+#             set_ec_value = None
+#             set_feed_level_value = None
 
-    except Exception as e:
-        messagebox.showerror("Error", f"An error occurred while fetching settings: {e}")
+#     except Exception as e:
+#         messagebox.showerror("Error", f"An error occurred while fetching settings: {e}")
 
 # Function to publish settings to MQTT topics every 1 minute
 def publish_settings():

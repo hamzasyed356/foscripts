@@ -148,25 +148,6 @@ def fetch_previous_feed_level():
         print(f"Error fetching previous feed level: {e}")
         return None
 
-# def fetch_set_init_fs():
-#     try:
-#         conn = psycopg2.connect(**DATABASE_CONFIG)
-#         cursor = conn.cursor()
-#         query = '''
-#         SELECT set_init_fs
-#         FROM fo_setting 
-#         ORDER BY timestamp DESC 
-#         LIMIT 1;
-#         '''
-#         cursor.execute(query)
-#         result = cursor.fetchone()
-#         cursor.close()
-#         conn.close()
-#         return result[0] if result else None
-#     except Exception as e:
-#         print(f"Error fetching set init fs: {e}")
-#         return None
-
 def fetch_previous_feed_tds():
     try:
         conn = psycopg2.connect(**DATABASE_CONFIG)
@@ -188,8 +169,12 @@ def fetch_previous_feed_tds():
         print(f"Error fetching previous feed tds: {e}")
         return None
 
-# Function to save data to the PostgreSQL database
+# Ensure timestamp is valid before saving
 def save_to_database(data):
+    if data['timestamp'] is None:
+        print("Error: Timestamp is None, cannot save data to database.")
+        return False
+
     try:
         conn = psycopg2.connect(**DATABASE_CONFIG)
         cursor = conn.cursor()
@@ -296,10 +281,11 @@ def main_loop():
     while True:
         time.sleep(30)  # Check every minute
 
-        # Save data to local database
-        success = save_to_database(sensor_data)
-        if success:
-            sensor_data['published'] = False
+        # Save data to local database if timestamp is valid
+        if sensor_data['timestamp'] is not None:
+            success = save_to_database(sensor_data)
+            if success:
+                sensor_data['published'] = False
 
         # Check for internet connection and upload unpublished data
         if is_connected():

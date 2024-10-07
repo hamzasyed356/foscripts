@@ -497,7 +497,7 @@ def periodically_update_ui():
     app.after(1000, periodically_update_ui)
 
 # Fetch the latest settings at startup and start publishing
-fetch_latest_settings()
+# fetch_latest_settings()
 publish_settings()
 app.after(1000, periodically_update_ui)
 app.mainloop()

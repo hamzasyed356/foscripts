@@ -309,7 +309,7 @@ def fetch_latest_settings():
 
 # Function to publish settings to MQTT topics every 1 minute
 def publish_settings():
-    mqtt_client.publish("set-cstr-temp", str(set_cstr_temp_value))
+    mqtt_client.publish("set-temp", str(set_cstr_temp_value))
     mqtt_client.publish("set-ec", str(set_ec_value))
     mqtt_client.publish("set-feed-level", str(set_feed_level_value))
     app.after(60000, publish_settings)  # Schedule to run every 1 minute

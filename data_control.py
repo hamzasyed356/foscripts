@@ -24,7 +24,7 @@ DATABASE_CONFIG = {
 MQTT_BROKER = '192.168.18.28'
 MQTT_PORT = 1883
 MQTT_TOPICS = ['cstr-ph', 'feed-ec', 'cstr-orp', 'cstr-temp', 'cstr-level', 
-               'feed-level', 'feed-tds', 'feed-temp', 'ds-tds', 'ds-level', 'ds-ec']
+               'feed-level', 'feed-tds', 'feed-temp', 'ds-tds', 'ds-level', 'ds-ec', 'weight']
 
 # Supabase configuration
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
@@ -49,7 +49,8 @@ sensor_data = {
     'flux': None,
     'increase_in_fs': None,
     'timestamp': None,
-    'published': False
+    'published': False,
+    'weight' : None
 }
 
 # Utility function to convert datetime to string
@@ -91,6 +92,8 @@ def on_message(client, userdata, msg):
         sensor_data['ds_ec'] = float(payload)
     elif topic == 'ds-level':
         sensor_data['ds_level'] = float(payload)
+    elif topic == 'weight':
+        sensor_data['weight'] = float(payload)
     
     # Calculate vol_to_ds, com_vol_fs, flux, and increase_in_fs based on the formulas
     calculate_additional_params()
@@ -179,11 +182,11 @@ def save_to_database(data):
         conn = psycopg2.connect(**DATABASE_CONFIG)
         cursor = conn.cursor()
         insert_query = '''
-        INSERT INTO fo_sensor_data (timestamp, cstr_ph, feed_ec, cstr_orp, ds_ec, cstr_temp, cstr_level, feed_level, feed_tds, feed_temp, ds_tds, ds_level, vol_to_ds, com_vol_fs, flux, increase_in_fs, published)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO fo_sensor_data (timestamp, cstr_ph, feed_ec, cstr_orp, ds_ec, cstr_temp, cstr_level, feed_level, feed_tds, feed_temp, ds_tds, ds_level, vol_to_ds, com_vol_fs, flux, increase_in_fs, published, weight)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         '''
         cursor.execute(insert_query, (data['timestamp'], data['cstr_ph'], data['feed_ec'], data['cstr_orp'], data['ds_ec'],
-                                     data['cstr_temp'], data['cstr_level'], data['feed_level'], data['feed_tds'], data['feed_temp'], data['ds_tds'], data['ds_level'], data['vol_to_ds'], data['com_vol_fs'], data['flux'], data['increase_in_fs'], data['published']))
+                                     data['cstr_temp'], data['cstr_level'], data['feed_level'], data['feed_tds'], data['feed_temp'], data['ds_tds'], data['ds_level'], data['vol_to_ds'], data['com_vol_fs'], data['flux'], data['increase_in_fs'], data['published'], data['weight']))
         
         conn.commit()
         cursor.close()
@@ -232,7 +235,8 @@ def upload_unpublished_data():
                     'vol_to_ds': row[10],
                     'com_vol_fs': row[11],
                     'flux': row[12],
-                    'increase_in_fs': row[13]
+                    'increase_in_fs': row[13],
+                    'weight' : row[17]
                 })
             response = upload_data_to_external_service(formatted_data)
             if response and response.data:

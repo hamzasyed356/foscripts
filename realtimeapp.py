@@ -26,6 +26,7 @@ MQTT_TOPICS = {
     "ds-tds": "ds_tds",
     "ds-ec": "ds_ec",
     "ds-level": "ds_level",
+    "weight": "weight",
     # "flux": "flux"  # Flux data will be fetched from the database
 }
 
@@ -399,6 +400,7 @@ anaerobic_cstr_params = [
     ("ORP", "cstr-orp", "cstr_orp", " mV"),
     ("Temp", "cstr-temp", "cstr_temp", " °C"),
     ("Level", "cstr-level", "cstr_level", " Liters"),
+    ("DS Weight", "weight", "weight", " g"),
     ("Flux", "flux", "flux", " LMH")  # Flux data fetched from database
 ]
 
